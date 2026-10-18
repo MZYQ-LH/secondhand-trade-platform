@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<!-- 个人中心：我的发布 / 我的收藏 / 我的订单 / 站内私信 -->
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>个人中心 - 校园闲换</title>
+    <link rel="stylesheet" href="css/style.css" />
+    <link rel="stylesheet" href="css/pages.css" />
+    <meta name="theme-color" content="#FF9FB8" />
+    <link rel="stylesheet" href="css/theme.css" />
+</head>
+
+<body data-page="profile">
+
+    <header class="header">
+        <div class="container header-inner">
+
+            <a class="logo" href="index.html">
+                <img src="logo.svg" class="logo-icon">
+                <span class="logo-brand">
+                    <span class="logo-text">校园闲换</span>
+                    <span class="logo-sub">捡漏、淘宝</span>
+                </span>
+            </a>
+
+            <div class="search-bar">
+                <input type="text" id="searchInput" placeholder="搜索闲置好物，比如 iPhone、自行车、教材…" />
+                <button type="button" id="searchBtn">搜索</button>
+            </div>
+
+            <div class="header-actions">
+                <a class="publish-btn" href="publish.html">＋ 发布闲置</a>
+                <div class="user-chip" id="userChip"></div>
+            </div>
+
+        </div>
+    </header>
+
+    <nav class="cat-bar">
+        <div class="container cat-inner" id="catBar"></div>
+    </nav>
+
+    <main class="container main">
+
+        <!-- 个人信息卡 -->
+        <div class="profile-head" id="profileHead"></div>
+
+        <!-- 标签页 -->
+        <div class="tabs" id="tabs">
+            <button class="tab active" data-tab="posts">我发布的</button>
+            <button class="tab" data-tab="fav">收藏 / 想要</button>
+            <button class="tab" data-tab="orders">我的订单</button>
+            <button class="tab" data-tab="msgs">私信 <span class="badge" id="msgBadge"
+                    style="display:none;">0</span></button>
+        </div>
+
+        <!-- 我发布的 -->
+        <section class="tab-panel" id="panel-posts">
+            <div class="product-grid" id="myProducts"></div>
+        </section>
+
+        <!-- 收藏 / 想要 -->
+        <section class="tab-panel" id="panel-fav" style="display:none;">
+            <div class="sub-tabs">
+                <button class="sub-tab active" data-sub="favorite">我的收藏</button>
+                <button class="sub-tab" data-sub="want">想要清单</button>
+            </div>
+            <div class="product-grid" id="favList"></div>
+        </section>
+
+        <!-- 我的订单 -->
+        <section class="tab-panel" id="panel-orders" style="display:none;">
+            <div class="sub-tabs">
+                <button class="sub-tab active" data-role="buy">我买到的</button>
+                <button class="sub-tab" data-role="sell">我卖出的</button>
+            </div>
+            <div id="orderList"></div>
+        </section>
+
+        <!-- 私信会话列表 -->
+        <section class="tab-panel" id="panel-msgs" style="display:none;">
+            <div id="convList"></div>
+        </section>
+
+    </main>
+
+    <footer class="footer">
+        校园闲换项目-课设web · © 2026
+    </footer>
+
+    <script src="js/data.js"></script>
+    <script src="js/profile.js"></script>
+
+    <!-- 樱花飘落花瓣背景：轻量无依赖，不遮挡内容与点击 -->
+    <script src="js/petals.js"></script>
+</body>
+</html>

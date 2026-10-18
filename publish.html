@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<!-- 发布闲置页：支持多图上传，分类从数据库动态生成；未登录不能发布 -->
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>发布闲置 - 校园闲换</title>
+    <link rel="stylesheet" href="css/style.css" />
+    <link rel="stylesheet" href="css/pages.css" />
+    <meta name="theme-color" content="#FF9FB8" />
+    <link rel="stylesheet" href="css/theme.css" />
+</head>
+
+<body data-page="publish">
+
+    <header class="header">
+        <div class="container header-inner">
+
+            <a class="logo" href="index.html">
+                <img src="logo.svg" class="logo-icon">
+                <span class="logo-brand">
+                    <span class="logo-text">校园闲换</span>
+                    <span class="logo-sub">捡漏、淘宝</span>
+                </span>
+            </a>
+
+            <div class="search-bar">
+                <input type="text" id="searchInput" placeholder="搜索闲置好物，比如 iPhone、自行车、教材…" />
+                <button type="button" id="searchBtn">搜索</button>
+            </div>
+
+            <div class="header-actions">
+                <a class="publish-btn" href="publish.html">＋ 发布闲置</a>
+                <div class="user-chip" id="userChip"></div>
+            </div>
+
+        </div>
+    </header>
+
+    <nav class="cat-bar">
+        <div class="container cat-inner" id="catBar"></div>
+    </nav>
+
+    <main class="container main">
+        <form class="form-card" id="publishForm">
+
+            <div class="form-title">发布闲置<span class="tip">让闲置游起来 🐟</span></div>
+
+            <!-- 登录提示（未登录时显示） -->
+            <div class="auth-error" id="needLogin" style="margin-bottom:16px;"></div>
+
+            <!-- 商品多图上传 -->
+            <div class="form-item">
+                <label><span class="required">*</span>商品图片（最多 9 张，第一张作为主图）</label>
+                <div class="upload-grid" id="uploadGrid">
+                    <label class="upload-add" for="imageFile">
+                        <span class="plus">＋</span>
+                        <span>上传图片</span>
+                    </label>
+                </div>
+                <input type="file" id="imageFile" accept="image/*" multiple style="display:none;" />
+                <div class="upload-tip">支持 jpg / png / webp，单张建议 5MB 以内；可多选或多次追加</div>
+            </div>
+
+            <div class="form-item">
+                <label><span class="required">*</span>商品标题</label>
+                <input type="text" id="title" maxlength="40"
+                    placeholder="品牌型号 + 关键信息，如：iPhone 13 128G 午夜色 无拆无修" />
+            </div>
+
+            <div class="form-row">
+                <div class="form-item">
+                    <label><span class="required">*</span>商品分类（来自数据库）</label>
+                    <select id="category"></select>
+                </div>
+                <div class="form-item">
+                    <label>新旧程度</label>
+                    <select id="condition"></select>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-item">
+                    <label><span class="required">*</span>售价（元）</label>
+                    <input type="number" id="price" min="0" step="0.01" placeholder="想卖多少钱？" />
+                </div>
+                <div class="form-item">
+                    <label>原价（元，选填）</label>
+                    <input type="number" id="originalPrice" min="0" step="0.01" placeholder="当时买成多少钱？" />
+                </div>
+            </div>
+
+            <div class="form-item">
+                <label>交易地点</label>
+                <input type="text" id="location" placeholder="如：浙江·杭州（支持同城自提 / 邮寄）" />
+            </div>
+
+            <div class="form-item">
+                <label><span class="required">*</span>商品描述</label>
+                <textarea id="desc" rows="5"
+                    placeholder="描述成色、使用时长、转手原因、配件是否齐全、是否支持验机等…"></textarea>
+            </div>
+
+            <button type="submit" class="submit-btn" id="submitBtn">立即发布</button>
+        </form>
+    </main>
+
+    <footer class="footer">
+        校园闲换项目-课设web · © 2026
+    </footer>
+
+    <script src="js/data.js"></script>
+    <script src="js/publish.js"></script>
+
+    <!-- 樱花飘落花瓣背景：轻量无依赖，不遮挡内容与点击 -->
+    <script src="js/petals.js"></script>
+</body>
+</html>

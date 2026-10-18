@@ -1,0 +1,653 @@
+/* ================================================================
+   theme.css —— 全站视觉升级（樱花主题 · v3）
+   ----------------------------------------------------------------
+   设计语言来源：桌面 index.html（樱花花瓣动效参考页）
+     · 花瓣配色：RGB(1.0,0.8,0.75) → (1.0,0.9,0.87)，即 #FFCCC0 ~ #FFE6DE
+     · 氛围光：中心通透 + 四周柔和渐隐，整体轻盈不厚重
+     · 材质：大圆角、柔光阴影、通透描边、克制的层级对比
+   本文件只做「视觉覆盖」，不改任何布局结构、类名与交互逻辑：
+     · 在 css/pages.css 之后引入，同名选择器自然覆盖
+     · 只覆盖颜色 / 阴影 / 圆角 / 过渡等表现层属性
+   ================================================================ */
+
+/* ================================================================
+   一、设计令牌（Design Tokens）
+   ================================================================ */
+:root {
+    /* —— 樱花色阶 —— */
+    --sakura-1: #FFF2F6;
+    /* 极浅：底色 */
+    --sakura-2: #FFD6E3;
+    /* 浅：描边 / 选中态底 */
+    --sakura-3: #FFB3C9;
+    /* 中：花瓣主色 */
+    --sakura-4: #EE6F97;
+    /* 深：主按钮 / 强调 */
+    --sakura-5: #C94E79;
+    /* 最深：文字强调 */
+
+    /* —— 覆盖原有主题变量（变量名保持不变，全站自动换肤）—— */
+    --xy-yellow: #EE6F97;
+    /* 原为青绿，现为樱花粉主色 */
+    --xy-yellow-dark: #D8557F;
+    /* 主色加深（悬停态） */
+    --xy-red: #FF5A45;
+    /* 价格色：暖珊瑚红，与粉拉开层次 */
+    --xy-text: #2C2530;
+    /* 主文字：墨紫，替代纯黑更柔和 */
+    --xy-text-sub: #948C9E;
+    /* 次要文字：灰紫 */
+    --xy-bg: #FBF7FA;
+    /* 页面浅底 */
+    --xy-border: #F2E7EE;
+    /* 分隔线 / 卡片描边 */
+
+    /* —— 渐变 / 阴影 / 圆角 —— */
+    --brand-grad: linear-gradient(135deg, #FF9FB8 0%, #EE6F97 55%, #D8557F 100%);
+    --brand-grad-soft: linear-gradient(135deg, #FFE4EC 0%, #FFD2E1 100%);
+    --glow-brand: 0 8px 22px rgba(238, 111, 151, .32);
+    --shadow-xs: 0 2px 8px rgba(80, 45, 70, .05);
+    --shadow-sm: 0 6px 18px rgba(80, 45, 70, .07);
+    --shadow-md: 0 14px 34px rgba(80, 45, 70, .12);
+    --radius-md: 16px;
+    --radius-lg: 20px;
+}
+
+/* ================================================================
+   二、页面底色与氛围光（参考页的通透感）
+   ================================================================ */
+body {
+    background-color: var(--xy-bg);
+    background-image:
+        radial-gradient(1100px 620px at 6% -10%, rgba(255, 199, 217, .55) 0%, rgba(255, 199, 217, 0) 62%),
+        radial-gradient(900px 520px at 98% -6%, rgba(203, 223, 255, .5) 0%, rgba(203, 223, 255, 0) 58%),
+        radial-gradient(900px 760px at 50% 104%, rgba(255, 226, 238, .55) 0%, rgba(255, 226, 238, 0) 62%),
+        linear-gradient(180deg, #FFFCFD 0%, #FAF6FA 45%, #F6F7FB 100%);
+    background-repeat: no-repeat;
+    -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+    background: var(--sakura-2);
+    color: #8C2F53;
+}
+
+/* ================================================================
+   三、花瓣画布（js/petals.js 注入，轻量无依赖）
+   —— 固定全屏、不接收鼠标事件（不遮挡点击）
+   ================================================================ */
+#petal-canvas {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 2;
+    /* 顶栏(100)/下拉菜单(200)/弹窗(9000) 均在其之上 */
+    pointer-events: none;
+    /* 关键：花瓣层不吃点击、不挡表单 */
+    display: block;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    #petal-canvas {
+        display: none;
+        /* 系统关闭动画时不显示花瓣 */
+    }
+}
+
+/* ================================================================
+   四、顶部导航 / 搜索条 / 分类栏
+   ================================================================ */
+.header {
+    background: rgba(255, 255, 255, .78);
+    -webkit-backdrop-filter: saturate(1.6) blur(14px);
+    backdrop-filter: saturate(1.6) blur(14px);
+    border-bottom: 1px solid rgba(238, 111, 151, .10);
+    box-shadow: 0 6px 24px rgba(80, 45, 70, .05);
+}
+
+.logo-icon {
+    background: var(--brand-grad-soft);
+    border-radius: 14px;
+    padding: 5px;
+    box-shadow: 0 4px 12px rgba(238, 111, 151, .22);
+}
+
+.logo-text {
+    color: var(--sakura-5);
+    letter-spacing: .5px;
+}
+
+.logo-sub {
+    letter-spacing: .5px;
+}
+
+/* 搜索条：柔粉描边 + 聚焦光晕 */
+.search-bar {
+    border: 1.5px solid rgba(238, 111, 151, .32);
+    background: rgba(255, 255, 255, .92);
+    box-shadow: inset 0 1px 2px rgba(80, 45, 70, .04), 0 2px 10px rgba(238, 111, 151, .08);
+    transition: border-color .22s, box-shadow .22s;
+}
+
+.search-bar:focus-within {
+    border-color: var(--sakura-4);
+    box-shadow: 0 0 0 4px rgba(238, 111, 151, .14);
+}
+
+.search-bar button {
+    background: var(--brand-grad);
+    color: #fff;
+    font-weight: 700;
+}
+
+.search-bar button:hover {
+    background: var(--xy-yellow-dark);
+    /* 悬停转纯色加深 */
+}
+
+/* 分类栏：与顶栏一致的玻璃质感 */
+.cat-bar {
+    background: rgba(255, 255, 255, .82);
+    -webkit-backdrop-filter: saturate(1.4) blur(12px);
+    backdrop-filter: saturate(1.4) blur(12px);
+    border-bottom: 1px solid rgba(238, 111, 151, .10);
+}
+
+.cat-num {
+    background: #FBF2F6;
+    color: #A08F9B;
+}
+
+.cat-btn.active .cat-num {
+    background: var(--sakura-2);
+    color: var(--sakura-5);
+}
+
+.cat-btn.active::after {
+    background: var(--brand-grad);
+    width: 24px;
+    border-radius: 3px;
+}
+
+/* ================================================================
+   五、商品网格与商品卡片
+   ================================================================ */
+.product-card {
+    background: rgba(255, 255, 255, .94);
+    border: 1px solid rgba(242, 231, 238, .9);
+    border-radius: 18px;
+    box-shadow: var(--shadow-xs);
+    transition: transform .28s cubic-bezier(.22, .61, .36, 1), box-shadow .28s;
+}
+
+.product-card:hover {
+    transform: translateY(-6px);
+    box-shadow: var(--shadow-md);
+    border-color: rgba(238, 111, 151, .28);
+}
+
+.card-img {
+    transition: transform .5s cubic-bezier(.22, .61, .36, 1);
+}
+
+.product-card:hover .card-img {
+    transform: scale(1.05);
+}
+
+/* 收藏心形：悬停泛粉 */
+.fav-btn:hover,
+.fav-btn.active {
+    color: var(--sakura-4);
+}
+
+/* 价格：收紧字距，视觉更利落 */
+.card-price {
+    letter-spacing: -.3px;
+}
+
+.card-title {
+    color: #33303A;
+}
+
+/* ================================================================
+   六、通用卡片容器（统一材质）
+   ================================================================ */
+.section-card,
+.form-card,
+.detail-card,
+.auth-card,
+.login-guard,
+.profile-head,
+.chat-box {
+    background: rgba(255, 255, 255, .95);
+    border: 1px solid rgba(242, 231, 238, .9);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+}
+
+.profile-head.is-guard {
+    background: none;
+    border: none;
+    box-shadow: none;
+}
+
+.section-title {
+    letter-spacing: .3px;
+}
+
+.empty-state {
+    background: rgba(255, 255, 255, .92);
+    border: 1px solid rgba(242, 231, 238, .9);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+}
+
+.footer {
+    background: transparent;
+    border-top: 1px solid rgba(238, 111, 151, .12);
+    color: #A79FAD;
+}
+
+/* ================================================================
+   七、按钮 / 标签页 / 表单控件
+   ================================================================ */
+/* —— 主按钮统一为樱花渐变 + 白字 + 柔光 —— */
+.publish-btn,
+.submit-btn,
+.btn-want,
+.btn-primary,
+.btn-mini.solid,
+.btn-mini.primary,
+.login-entry,
+.empty-state a,
+.guard-btn.primary,
+.chat-input button {
+    background: var(--brand-grad);
+    color: #fff;
+    border-color: transparent;
+    box-shadow: 0 6px 16px rgba(238, 111, 151, .24);
+}
+
+.publish-btn:hover,
+.submit-btn:hover,
+.btn-want:hover,
+.btn-primary:hover,
+.btn-mini.solid:hover,
+.btn-mini.primary:hover,
+.login-entry:hover,
+.guard-btn.primary:hover,
+.chat-input button:hover {
+    background: var(--brand-grad);
+    color: #fff;
+    filter: brightness(1.04);
+    transform: translateY(-1px);
+    box-shadow: var(--glow-brand);
+}
+
+/* —— 次要按钮：通透白底 + 粉色悬停 —— */
+.btn-ghost,
+.btn-mini,
+.btn-logout,
+.btn-fav,
+.contact-btn,
+.fav-toggle {
+    background: rgba(255, 255, 255, .92);
+    border: 1px solid var(--xy-border);
+    transition: border-color .2s, color .2s, background .2s, box-shadow .2s, transform .18s;
+}
+
+.btn-ghost:hover,
+.btn-mini:hover,
+.btn-fav:hover,
+.contact-btn:hover,
+.fav-toggle:hover {
+    border-color: var(--sakura-3);
+    color: var(--sakura-5);
+}
+
+.btn-fav.active {
+    background: #FFEFF4;
+    border-color: var(--sakura-3);
+    color: var(--sakura-4);
+}
+
+.fav-toggle.active {
+    background: #FFEAF1;
+    border-color: var(--sakura-3);
+    color: var(--sakura-5);
+    font-weight: 600;
+}
+
+.fav-toggle:hover {
+    border-color: var(--sakura-3);
+}
+
+/* 危险按钮：柔和粉底 */
+.btn-danger,
+.btn-mini.danger {
+    background: #FFEFF1;
+    color: #F0445A;
+}
+
+.btn-danger:hover,
+.btn-mini.danger:hover {
+    background: #FFE0E5;
+    color: #F0445A;
+}
+
+/* —— 标签页：胶囊 + 渐变激活态 —— */
+.p-tab,
+.tab {
+    background: rgba(255, 255, 255, .92);
+    border: 1px solid var(--xy-border);
+    color: #6B6270;
+}
+
+.p-tab.active,
+.tab.active {
+    background: var(--brand-grad);
+    border-color: transparent;
+    color: #fff;
+    font-weight: 600;
+    box-shadow: 0 6px 16px rgba(238, 111, 151, .24);
+}
+
+.sub-tab.active::after {
+    background: var(--brand-grad);
+}
+
+/* —— 表单控件：聚焦粉色光晕 —— */
+.form-item input[type="text"],
+.form-item input[type="number"],
+.form-item select,
+.form-item textarea,
+.auth-field input,
+.chat-input textarea {
+    border: 1px solid var(--xy-border);
+    background: rgba(255, 255, 255, .94);
+    transition: border-color .2s, box-shadow .2s;
+}
+
+.form-item input:focus,
+.form-item select:focus,
+.form-item textarea:focus,
+.auth-field input:focus,
+.chat-input textarea:focus {
+    border-color: var(--sakura-3);
+    box-shadow: 0 0 0 4px rgba(238, 111, 151, .12);
+}
+
+.img-picker label.selected {
+    border-color: var(--sakura-4);
+    box-shadow: 0 0 0 3px rgba(238, 111, 151, .22);
+}
+
+.upload-add:hover {
+    border-color: var(--sakura-3);
+    color: var(--sakura-5);
+}
+
+/* ================================================================
+   八、详情页
+   ================================================================ */
+.breadcrumb a:hover {
+    color: var(--sakura-5);
+}
+
+.detail-price-box {
+    background: linear-gradient(120deg, #FFF3F7 0%, #FFE8F0 58%, #FFEDE8 100%);
+    border: 1px solid rgba(238, 111, 151, .14);
+    border-radius: var(--radius-md);
+}
+
+.detail-price-tip {
+    color: var(--sakura-5);
+}
+
+.detail-meta .tag {
+    background: #FBF5F8;
+    color: #7C7286;
+}
+
+.seller-card {
+    border: 1px solid var(--xy-border);
+    background: rgba(255, 255, 255, .8);
+    transition: border-color .2s, box-shadow .2s;
+}
+
+.seller-card:hover {
+    border-color: rgba(238, 111, 151, .28);
+    box-shadow: var(--shadow-xs);
+}
+
+.thumb.active {
+    border-color: var(--sakura-4);
+}
+
+/* ================================================================
+   九、个人中心（资料卡 / 订单 / 会话）
+   ================================================================ */
+.profile-avatar {
+    box-shadow: 0 6px 16px rgba(80, 45, 70, .16);
+}
+
+.profile-stats .num,
+.profile-stats strong {
+    color: var(--sakura-5);
+}
+
+.order-row,
+.conv-row {
+    background: rgba(255, 255, 255, .95);
+    border: 1px solid rgba(242, 231, 238, .9);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-xs);
+}
+
+.conv-row:hover {
+    border-color: rgba(238, 111, 151, .28);
+    box-shadow: var(--shadow-sm);
+}
+
+.status-pill {
+    background: #EAF7F1;
+    color: #2FA973;
+}
+
+.status-pill.wait {
+    background: #FFEFEC;
+    color: var(--xy-red);
+}
+
+.order-status {
+    border: 1px solid transparent;
+}
+
+.order-main a:hover,
+.order-title a:hover {
+    color: var(--sakura-5);
+}
+
+.conv-good {
+    background: #FFF3F7;
+    color: var(--sakura-5);
+}
+
+/* 私信弹窗 */
+.chat-head,
+.chat-input {
+    border-color: var(--xy-border);
+}
+
+.chat-list {
+    background: linear-gradient(180deg, #FDF9FC 0%, #F8F4F8 100%);
+}
+
+.chat-product {
+    background: #FBF4F8;
+}
+
+.bubble.other {
+    background: #fff;
+    border: 1px solid var(--xy-border);
+    box-shadow: var(--shadow-xs);
+}
+
+.bubble.me {
+    background: var(--brand-grad);
+    color: #fff;
+    box-shadow: 0 6px 16px rgba(238, 111, 151, .26);
+}
+
+/* ================================================================
+   十、登录 / 注册页
+   ================================================================ */
+.auth-tabs {
+    background: #F7F1F5;
+}
+
+.auth-tab.active {
+    background: #fff;
+    color: var(--sakura-5);
+    box-shadow: 0 2px 10px rgba(238, 111, 151, .16);
+}
+
+.auth-error {
+    background: #FFEFF1;
+    color: #F0445A;
+}
+
+.guard-icon {
+    background: linear-gradient(135deg, #FFEAF1 0%, #FFDCE8 100%);
+    color: var(--sakura-4);
+    box-shadow: 0 8px 20px rgba(238, 111, 151, .18);
+}
+
+/* ================================================================
+   十一、轻提示 / 滚动条
+   ================================================================ */
+.toast {
+    border-radius: 14px;
+    background: rgba(44, 37, 48, .9);
+    -webkit-backdrop-filter: blur(6px);
+    backdrop-filter: blur(6px);
+    box-shadow: 0 10px 26px rgba(80, 45, 70, .22);
+}
+
+.toast.ok {
+    background: rgba(47, 169, 115, .94);
+}
+
+.toast.err {
+    background: rgba(240, 68, 90, .94);
+}
+
+::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #FFC7D9, #EE6F97);
+    border: 2px solid transparent;
+    background-clip: content-box;
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, #FFB3C9, #D8557F);
+    background-clip: content-box;
+}
+
+/* ================================================================
+   十二、入场动效（仅静态容器，避免影响动态卡片的悬停变换）
+   ================================================================ */
+@keyframes riseIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+.section-card,
+.form-card,
+.auth-card,
+.login-guard,
+.profile-head {
+    animation: riseIn .5s cubic-bezier(.22, .61, .36, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+    .section-card,
+    .form-card,
+    .auth-card,
+    .login-guard,
+    .profile-head,
+    .product-card,
+    .card-img,
+    .tab,
+    .p-tab {
+        animation: none;
+        transition: none;
+    }
+}
+
+/* ================================================================
+   十三、移动端细节（在原有响应式基础上做视觉微调，不改结构）
+   ================================================================ */
+@media (max-width: 640px) {
+    .container {
+        padding: 0 14px;
+    }
+
+    .header-inner {
+        gap: 12px;
+    }
+
+    .logo-icon {
+        width: 38px;
+        height: 38px;
+    }
+
+    .logo-text {
+        font-size: 18px;
+    }
+
+    .product-grid {
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 10px;
+    }
+
+    .card-body {
+        padding: 9px 10px 11px;
+    }
+
+    .card-price {
+        font-size: 18px;
+    }
+
+    .product-card {
+        border-radius: 14px;
+    }
+
+    .detail-card,
+    .section-card {
+        padding: 18px;
+        border-radius: var(--radius-md);
+    }
+
+    .form-card {
+        border-radius: var(--radius-md);
+    }
+}

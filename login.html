@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<!-- 登录 / 注册页：图形验证码做真人验证，登录态由后端 Session 保持 -->
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>登录 / 注册 - 校园闲换</title>
+    <link rel="stylesheet" href="css/style.css" />
+    <link rel="stylesheet" href="css/pages.css" />
+    <meta name="theme-color" content="#FF9FB8" />
+    <link rel="stylesheet" href="css/theme.css" />
+</head>
+
+<body data-page="login">
+
+    <header class="header">
+        <div class="container header-inner">
+            <a class="logo" href="index.html">
+                <img src="logo.svg" class="logo-icon">
+                <span class="logo-brand">
+                    <span class="logo-text">校园闲换</span>
+                    <span class="logo-sub">捡漏、淘宝</span>
+                </span>
+            </a>
+            <div class="search-bar">
+                <input type="text" id="searchInput" placeholder="搜索闲置好物，比如 iPhone、自行车、教材…" />
+                <button type="button" id="searchBtn">搜索</button>
+            </div>
+            <div class="header-actions">
+                <a class="publish-btn" href="publish.html">＋ 发布闲置</a>
+                <div class="user-chip" id="userChip"></div>
+            </div>
+        </div>
+    </header>
+
+    <nav class="cat-bar">
+        <div class="container cat-inner" id="catBar"></div>
+    </nav>
+
+    <main class="container auth-page">
+        <div class="auth-card">
+            <div class="auth-title">欢迎来到校园闲换</div>
+            <div class="auth-sub" id="authSub">登录后即可发布闲置、收藏、下单和私信卖家</div>
+
+            <div class="auth-tabs">
+                <div class="auth-tab active" id="tabLogin">登录</div>
+                <div class="auth-tab" id="tabRegister">注册</div>
+            </div>
+
+            <div class="auth-error" id="authError"></div>
+
+            <div class="auth-form">
+                <div class="auth-field">
+                    <label>账号</label>
+                    <input type="text" id="username" placeholder="3-20 位字母 / 数字 / 下划线" autocomplete="username" />
+                </div>
+
+                <div class="auth-field" id="nickField" style="display:none;">
+                    <label>昵称</label>
+                    <input type="text" id="nickname" placeholder="其他同学看到的名字，如：爱吃鱼的猫" />
+                </div>
+
+                <div class="auth-field">
+                    <label>密码</label>
+                    <input type="password" id="password" placeholder="至少 6 位" autocomplete="current-password" />
+                </div>
+
+                <div class="auth-field">
+                    <label>真人验证（图形验证码）</label>
+                    <div class="captcha-row">
+                        <input type="text" id="captchaCode" placeholder="输入右侧 4 位字符" maxlength="6" />
+                        <img class="captcha-img" id="captchaImg" title="点击刷新验证码" alt="点击刷新验证码" />
+                    </div>
+                    <div class="captcha-hint">看不清？点击图片换一张（验证码一次性，提交后自动刷新）</div>
+                </div>
+
+                <button class="btn-primary btn-block" id="authSubmit" type="button">登 录</button>
+            </div>
+
+            
+        </div>
+    </main>
+
+    <footer class="footer">
+        校园闲换项目-课设web · © 2026
+    </footer>
+
+    <script src="js/data.js"></script>
+    <script src="js/login.js"></script>
+
+    <!-- 樱花飘落花瓣背景：轻量无依赖，不遮挡内容与点击 -->
+    <script src="js/petals.js"></script>
+</body>
+</html>

@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<!-- 首页：分类栏改为由后端数据库动态渲染（js/data.js 的 mountCatBar） -->
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>校园闲换 · 校园二手交易</title>
+    <link rel="stylesheet" href="css/style.css" />
+    <link rel="stylesheet" href="css/pages.css" />
+    <meta name="theme-color" content="#FF9FB8" />
+    <link rel="stylesheet" href="css/theme.css" />
+</head>
+
+<body data-page="index">
+
+    <header class="header">
+        <div class="container header-inner">
+
+            <a class="logo" href="index.html">
+                <img src="logo.svg" class="logo-icon">
+                <span class="logo-brand">
+                    <span class="logo-text">校园闲换</span>
+                    <span class="logo-sub">捡漏、淘宝</span>
+                </span>
+            </a>
+
+            <div class="search-bar">
+                <input type="text" id="searchInput" placeholder="搜索闲置好物，比如 iPhone、自行车、教材…" />
+                <button type="button" id="searchBtn">搜索</button>
+            </div>
+
+            <!-- 右侧操作区：发布 + 用户（未登录显示"登录/注册"，登录后为头像下拉菜单） -->
+            <div class="header-actions">
+                <a class="publish-btn" href="publish.html">＋ 发布闲置</a>
+                <div class="user-chip" id="userChip"></div>
+            </div>
+
+        </div>
+    </header>
+
+    <!-- 分类导航栏：内容由数据库 categories 表动态生成 -->
+    <nav class="cat-bar">
+        <div class="container cat-inner" id="catBar"></div>
+    </nav>
+
+    <main class="container main">
+
+        <div class="filter-bar">
+            <span><strong id="recLabel">为你推荐</strong> <strong id="countDisplay">0</strong> 件闲置好物</span>
+            <button class="fav-toggle" id="showFavBtn">♡ 只看收藏</button>
+        </div>
+
+        <div id="productList" class="product-grid"></div>
+
+    </main>
+
+    <footer class="footer">
+        校园闲换项目-课设web · © 2026
+    </footer>
+
+    <script src="js/data.js"></script>
+    <script src="js/index.js"></script>
+
+    <!-- 樱花飘落花瓣背景：轻量无依赖，不遮挡内容与点击 -->
+    <script src="js/petals.js"></script>
+</body>
+</html>
