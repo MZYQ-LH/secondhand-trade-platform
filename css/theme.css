@@ -518,6 +518,16 @@ body {
     color: #F0445A;
 }
 
+.demo-accounts {
+    background: #FAF5F8;
+}
+
+.demo-accounts code {
+    background: #fff;
+    border: 1px solid var(--xy-border);
+    color: var(--sakura-5);
+}
+
 .guard-icon {
     background: linear-gradient(135deg, #FFEAF1 0%, #FFDCE8 100%);
     color: var(--sakura-4);

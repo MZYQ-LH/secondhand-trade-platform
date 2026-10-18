@@ -5,13 +5,16 @@
 ================================================================
   新增能力：
     1) 登录 / 注册（图形验证码真人验证 + Flask Session 登录态）
-    2) 7 张表业务接口：users / categories / products /
-       product_images / favorites / orders / messages
+    2) 9 张表业务接口：users / categories / products /
+       product_images / favorites / orders / messages / reviews
     3) 商品分类改为接口下发（前端不再写死）
     4) 发布支持多图（product_images 一对多）
     5) 收藏 / 想要改为数据库落库（联合唯一索引，杜绝重复累加）
     6) 详情页拍下下单（orders）、站内私信（messages）
     7) 发布 / 收藏 / 下单 / 私信 等写接口全部登录鉴权
+    8) 个人信息修改：昵称 / 头像 / 密码（登录账号不可修改）
+    9) 订单评价：订单完成后买家可 1-5 星评分 + 文字评价，
+       商品详情页展示平均分与评价列表，个人中心可查发出 / 收到的评价
 ================================================================
 """
 import base64
@@ -297,7 +300,6 @@ FONT_CANDIDATES = [
     r'C:\Windows\Fonts\msyhbd.ttc',
     r'C:\Windows\Fonts\simhei.ttf',
     r'C:\Windows\Fonts\msyh.ttc',
-    '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf',
 ]
 
 
@@ -308,11 +310,7 @@ def _font(size):
                 return ImageFont.truetype(path, size)
             except Exception:
                 continue
-    # 兜底：万一所有字体都找不到，也要保证字号跟画布匹配
-    try:
-        return ImageFont.load_default(size=size)
-    except TypeError:
-        return ImageFont.load_default()
+    return ImageFont.load_default()
 
 
 def _rand_color(lo, hi):
@@ -470,8 +468,81 @@ def api_user_profile(uid):
     user['created_at'] = fmt_dt(user['created_at'])
     user['product_total'] = int(stat['total'] or 0)
     user['product_on_sale'] = int(stat['on_sale'] or 0)
+    rstat = q_one(
+        'SELECT COUNT(*) AS n, AVG(`rating`) AS avg_score FROM `reviews` '
+        'WHERE `reviewee_id` = %s', (uid,))
+    user['review_count'] = int(rstat['n'] or 0)
+    user['rating_avg'] = round(float(rstat['avg_score'] or 0), 1)
     user.pop('password_hash', None)
     return ok(user)
+
+
+# ==================== 个人信息修改（昵称 / 头像 / 密码） ====================
+NICKNAME_MAX = 20          # 与注册接口 api_register 的昵称校验保持一致
+PASSWORD_MIN = 6           # 与注册接口 api_register 的密码校验保持一致
+PASSWORD_MAX = 64
+AVATAR_MAX = 255
+
+
+@app.route('/api/me/profile', methods=['POST'])
+@limiter.limit(RATE_WRITE)
+@login_required
+def api_me_profile_update():
+    """修改个人资料：昵称 / 头像（登录账号 username 不可修改）"""
+    data = request.get_json(silent=True) or {}
+    user = current_user()
+    nickname = (data.get('nickname') or '').strip()
+    avatar = (data.get('avatar') or '').strip()
+
+    if not nickname:
+        return err('昵称不能为空')
+    if len(nickname) > NICKNAME_MAX:
+        return err('昵称最多 %d 个字符' % NICKNAME_MAX)
+    if len(avatar) > AVATAR_MAX:
+        return err('头像地址过长')
+    if avatar and not (avatar.startswith('/') or avatar.startswith('http://')
+                       or avatar.startswith('https://')):
+        return err('头像只能是本站图片路径或 http(s) 链接')
+
+    # products.seller 是发布时冗余的卖家昵称，改昵称时一并同步，避免列表页显示旧昵称
+    exe_many([
+        ('UPDATE `users` SET `nickname` = %s, `avatar` = %s WHERE `id` = %s',
+         (nickname, avatar, user['id'])),
+        ('UPDATE `products` SET `seller` = %s WHERE `user_id` = %s',
+         (nickname, user['id'])),
+    ])
+    return ok({'user': current_user()}, msg='个人资料已更新')
+
+
+@app.route('/api/me/password', methods=['POST'])
+@limiter.limit(RATE_WRITE)
+@login_required
+def api_me_password_update():
+    """修改密码：需校验原密码，新密码规则与注册一致（至少 6 位）"""
+    data = request.get_json(silent=True) or {}
+    old_password = data.get('old_password') or ''
+    new_password = data.get('new_password') or ''
+    confirm_password = data.get('confirm_password')
+
+    if not old_password:
+        return err('请输入原密码')
+    if len(new_password) < PASSWORD_MIN:
+        return err('新密码至少 %d 位' % PASSWORD_MIN)
+    if len(new_password) > PASSWORD_MAX:
+        return err('新密码最多 %d 位' % PASSWORD_MAX)
+    if new_password == old_password:
+        return err('新密码不能与原密码相同')
+    if confirm_password is not None and confirm_password != new_password:
+        return err('两次输入的新密码不一致')
+
+    uid = current_user()['id']
+    row = q_one('SELECT `password_hash` FROM `users` WHERE `id` = %s', (uid,))
+    if not row or not check_password_hash(row['password_hash'], old_password):
+        return err('原密码不正确', code=4)
+
+    exe('UPDATE `users` SET `password_hash` = %s WHERE `id` = %s',
+        (generate_password_hash(new_password, method='pbkdf2:sha256'), uid))
+    return ok(msg='密码修改成功，请牢记新密码')
 
 
 # ==================== 分类接口（前端动态拉取） ====================
@@ -545,6 +616,23 @@ def attach_flags(products, uid):
     return products
 
 
+def attach_review_stats(products):
+    """批量补评价统计（平均分 / 评价数），供商品卡片、详情页展示"""
+    if not products:
+        return products
+    ids = [int(p['id']) for p in products]
+    holder = ','.join(['%s'] * len(ids))
+    rows = q_all(
+        'SELECT `product_id`, COUNT(*) AS n, AVG(`rating`) AS avg_score '
+        'FROM `reviews` WHERE `product_id` IN (%s) GROUP BY `product_id`' % holder, ids)
+    stat_map = {r['product_id']: r for r in rows}
+    for p in products:
+        s = stat_map.get(p['id'])
+        p['review_count'] = int(s['n']) if s else 0
+        p['rating_avg'] = round(float(s['avg_score']), 1) if s else 0
+    return products
+
+
 def shape_one(row, uid):
     """单条商品统一包装：补多图、收藏标记、结构化卖家信息（与详情页结构保持一致）"""
     if not row:
@@ -557,6 +645,11 @@ def shape_one(row, uid):
                        'FROM `users` WHERE `id` = %s', (row['user_id'],))
         if seller:
             seller['created_at'] = fmt_dt(seller['created_at'])
+            sstat = q_one(
+                'SELECT COUNT(*) AS n, AVG(`rating`) AS avg_score FROM `reviews` '
+                'WHERE `reviewee_id` = %s', (row['user_id'],))
+            seller['review_count'] = int(sstat['n'] or 0)
+            seller['rating_avg'] = round(float(sstat['avg_score'] or 0), 1)
     row['seller'] = seller or {
         'id': None, 'nickname': row.get('seller') or '匿名用户',
         'avatar': '', 'created_at': '',
@@ -633,6 +726,7 @@ def api_products():
                  ' LIMIT %s OFFSET %s', args + [limit, offset])
     attach_images(rows)
     attach_flags(rows, uid)
+    attach_review_stats(rows)
     return ok({'total': int(total), 'list': rows})
 
 
@@ -642,6 +736,7 @@ def api_product_detail(pid):
     if not row:
         return err('商品不存在或已被删除', http=404)
     shape_one(row, session.get('user_id'))
+    attach_review_stats([row])
 
     related = q_all(PRODUCT_SELECT +
                     " WHERE p.`id` <> %s AND p.`status` = '在售' AND "
@@ -650,6 +745,7 @@ def api_product_detail(pid):
                     (pid, row.get('category_id'), row.get('category')))
     attach_images(related)
     attach_flags(related, session.get('user_id'))
+    attach_review_stats(related)
     return ok({'product': row, 'related': related})
 
 
@@ -882,7 +978,9 @@ def api_order_list():
     rows = q_all(
         'SELECT o.*, p.`title` AS product_title, p.`image` AS product_image, '
         '       p.`price` AS product_price, '
-        '       b.`nickname` AS buyer_name, s.`nickname` AS seller_name '
+        '       b.`nickname` AS buyer_name, s.`nickname` AS seller_name, '
+        '       EXISTS (SELECT 1 FROM `reviews` r WHERE r.`order_id` = o.`id`) '
+        '       AS reviewed '
         'FROM `orders` o '
         'LEFT JOIN `products` p ON p.`id` = o.`product_id` '
         'LEFT JOIN `users` b ON b.`id` = o.`buyer_id` '
@@ -892,6 +990,7 @@ def api_order_list():
         r['created_at'] = fmt_dt(r['created_at'])
         r['amount'] = float(r['amount'] or 0)
         r['role'] = 'buyer' if r['buyer_id'] == user['id'] else 'seller'
+        r['reviewed'] = bool(int(r.get('reviewed') or 0))
     return ok(rows)
 
 
@@ -934,6 +1033,117 @@ def api_order_status(oid):
                       (order['product_id'],)))
     exe_many(stmts)
     return ok({'id': oid, 'status': target}, msg='订单已更新为「%s」' % target)
+
+
+# ==================== 订单评价（订单完成后买家评价卖家，一单一评） ====================
+REVIEW_MAX_LEN = 200          # 与前端 profile.html 评价输入框 maxlength 保持一致
+RATING_RANGE = (1, 2, 3, 4, 5)
+
+
+def review_stats(pid):
+    """商品评价总数 + 平均分（保留 1 位小数，无评价返回 0）"""
+    row = q_one('SELECT COUNT(*) AS n, AVG(`rating`) AS avg_score FROM `reviews` '
+                'WHERE `product_id` = %s', (pid,))
+    return int(row['n'] or 0), round(float(row['avg_score'] or 0), 1)
+
+
+@app.route('/api/orders/<int:oid>/review', methods=['POST'])
+@limiter.limit(RATE_WRITE)
+@login_required
+def api_order_review(oid):
+    """提交评价：仅该订单买家可评、订单需已完成、每个订单只能评一次"""
+    data = request.get_json(silent=True) or {}
+    uid = current_user()['id']
+    order = q_one('SELECT * FROM `orders` WHERE `id` = %s', (oid,))
+    if not order:
+        return err('订单不存在', http=404)
+    if order['buyer_id'] != uid:
+        return err('只有买家可以评价该订单', code=403, http=403)
+    if order['status'] != '已完成':
+        return err('订单完成后才能评价（当前状态「%s」）' % order['status'])
+    if q_one('SELECT `id` FROM `reviews` WHERE `order_id` = %s', (oid,)):
+        return err('该订单已评价过，不能重复评价', code=5, http=409)
+
+    try:
+        rating = int(data.get('rating'))
+    except (TypeError, ValueError):
+        return err('请选择 1-5 星评分')
+    if rating not in RATING_RANGE:
+        return err('评分只能是 1-5 星')
+
+    content = (data.get('content') or '').strip()
+    if len(content) > REVIEW_MAX_LEN:
+        return err('评价内容最多 %d 个字' % REVIEW_MAX_LEN)
+
+    rid = exe('INSERT INTO `reviews` (`order_id`,`product_id`,`reviewer_id`,'
+              '`reviewee_id`,`rating`,`content`) VALUES (%s,%s,%s,%s,%s,%s)',
+              (oid, order['product_id'], uid, order['seller_id'], rating, content))
+    row = q_one('SELECT * FROM `reviews` WHERE `id` = %s', (rid,))
+    row['created_at'] = fmt_dt(row['created_at'])
+    row['rating'] = int(row['rating'])
+    return ok(row, msg='评价成功，感谢你的反馈')
+
+
+@app.route('/api/products/<int:pid>/reviews', methods=['GET'])
+def api_product_reviews(pid):
+    """商品评价列表（含平均分、星级分布），详情页展示用"""
+    if not q_one('SELECT `id` FROM `products` WHERE `id` = %s', (pid,)):
+        return err('商品不存在', http=404)
+    try:
+        limit = min(int(request.args.get('limit') or 50), 200)
+    except ValueError:
+        limit = 50
+
+    rows = q_all(
+        'SELECT r.`id`, r.`order_id`, r.`rating`, r.`content`, r.`created_at`, '
+        '       u.`id` AS reviewer_id, u.`nickname` AS reviewer_name, '
+        '       u.`avatar` AS reviewer_avatar '
+        'FROM `reviews` r '
+        'LEFT JOIN `users` u ON u.`id` = r.`reviewer_id` '
+        'WHERE r.`product_id` = %s ORDER BY r.`id` DESC LIMIT %s', (pid, limit))
+    for r in rows:
+        r['created_at'] = fmt_dt(r['created_at'])
+        r['rating'] = int(r['rating'])
+        r['reviewer_name'] = r.get('reviewer_name') or '匿名用户'
+        r['reviewer_avatar'] = r.get('reviewer_avatar') or ''
+
+    total, avg_score = review_stats(pid)
+    dist = dict((str(i), 0) for i in RATING_RANGE)
+    for r in q_all('SELECT `rating`, COUNT(*) AS n FROM `reviews` '
+                   'WHERE `product_id` = %s GROUP BY `rating`', (pid,)):
+        dist[str(int(r['rating']))] = int(r['n'])
+    return ok({'total': total, 'avg': avg_score, 'dist': dist, 'list': rows})
+
+
+@app.route('/api/me/reviews', methods=['GET'])
+@login_required
+def api_my_reviews():
+    """个人中心：我发出的评价（sent）/ 我收到的评价（received）"""
+    uid = current_user()['id']
+    role = (request.args.get('role') or 'sent').strip()
+    if role not in ('sent', 'received'):
+        return err('role 只能是 sent 或 received')
+
+    field = 'r.`reviewer_id`' if role == 'sent' else 'r.`reviewee_id`'
+    rows = q_all(
+        'SELECT r.`id`, r.`order_id`, r.`product_id`, r.`rating`, r.`content`, '
+        '       r.`created_at`, p.`title` AS product_title, p.`image` AS product_image, '
+        '       ru.`nickname` AS reviewer_name, tu.`nickname` AS reviewee_name '
+        'FROM `reviews` r '
+        'LEFT JOIN `products` p ON p.`id` = r.`product_id` '
+        'LEFT JOIN `users` ru ON ru.`id` = r.`reviewer_id` '
+        'LEFT JOIN `users` tu ON tu.`id` = r.`reviewee_id` '
+        'WHERE ' + field + ' = %s ORDER BY r.`id` DESC', (uid,))
+    for r in rows:
+        r['created_at'] = fmt_dt(r['created_at'])
+        r['rating'] = int(r['rating'])
+        r['product_title'] = r.get('product_title') or '商品已删除'
+        r['product_image'] = r.get('product_image') or ''
+        r['peer_name'] = (r.get('reviewee_name') if role == 'sent'
+                          else r.get('reviewer_name')) or '已注销用户'
+    total = len(rows)
+    avg_score = round(sum(r['rating'] for r in rows) / float(total), 1) if total else 0
+    return ok({'role': role, 'total': total, 'avg': avg_score, 'list': rows})
 
 
 # ==================== 站内私信 ====================

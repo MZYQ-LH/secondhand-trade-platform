@@ -97,6 +97,16 @@ async function init() {
             if (e.key === 'Enter') submit();
         });
     });
+    /* 演示账号一键填入 */
+    document.querySelectorAll('.demo-accounts code[data-acc]').forEach(function (el) {
+        el.addEventListener('click', function () {
+            const parts = el.dataset.acc.split('/');
+            switchMode('login');
+            $('username').value = parts[0];
+            $('password').value = parts[1];
+            toast('已填入演示账号，请输入验证码', 'ok');
+        });
+    });
 
     /* 已登录直接跳走 */
     const user = await Auth.refresh();

@@ -4,8 +4,8 @@ db_migrate.py —— 校园闲换 数据库迁移脚本（幂等，可重复执�
 ========================================================================
 作用：
   0) 数据库不存在时自动创建（utf8mb4）；已存在则跳过
-  1) 创建/补齐 7 张表：users、categories、products、product_images、
-     favorites、orders、messages
+  1) 创建/补齐 8 张表：users、categories、products、product_images、
+     favorites、orders、messages、reviews（订单评价表）
   2) 初始化 10 个商品分类（前端分类列表改为从数据库动态拉取）
   3) 迁移历史商品数据：补 category_id / status 字段，
      并把老的 products.image 单图迁移进 product_images 多图表
@@ -38,7 +38,7 @@ CATEGORIES = [
 
 # ---------------- 业务表清单（建表 / 汇总共用） ----------------
 TABLES = ['users', 'categories', 'products', 'product_images',
-          'favorites', 'orders', 'messages']
+          'favorites', 'orders', 'messages', 'reviews']
 
 # ---------------- 表结构 ----------------
 DDL = {}
@@ -127,6 +127,25 @@ CREATE TABLE IF NOT EXISTS `messages` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='站内私信表'
 """
 
+# ---------------- reviews 订单评价表（一单一评，买家评卖家） ----------------
+DDL['reviews'] = """
+CREATE TABLE IF NOT EXISTS `reviews` (
+  `id` INT NOT NULL AUTO_INCREMENT COMMENT '评价ID',
+  `order_id` INT NOT NULL COMMENT '关联订单ID',
+  `product_id` INT NOT NULL COMMENT '被评价商品ID',
+  `reviewer_id` INT NOT NULL COMMENT '评价人(买家)ID',
+  `reviewee_id` INT NOT NULL COMMENT '被评价人(卖家)ID',
+  `rating` TINYINT NOT NULL DEFAULT 5 COMMENT '评分 1-5 星',
+  `content` VARCHAR(200) NOT NULL DEFAULT '' COMMENT '评价内容',
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '评价时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_order` (`order_id`),
+  KEY `idx_product` (`product_id`),
+  KEY `idx_reviewer` (`reviewer_id`),
+  KEY `idx_reviewee` (`reviewee_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='订单评价表(一单一评，买家评卖家)'
+"""
+
 # ---------------- products 商品主表（全新环境由本脚本直接创建） ----------------
 DDL['products'] = """
 CREATE TABLE IF NOT EXISTS `products` (
@@ -179,6 +198,14 @@ FOREIGN_KEYS = [
      "ALTER TABLE `messages` ADD CONSTRAINT `fk_msg_receiver` FOREIGN KEY (`receiver_id`) REFERENCES `users`(`id`) ON DELETE CASCADE"),
     ("messages", "fk_msg_product",
      "ALTER TABLE `messages` ADD CONSTRAINT `fk_msg_product` FOREIGN KEY (`product_id`) REFERENCES `products`(`id`) ON DELETE SET NULL"),
+    ("reviews", "fk_review_order",
+     "ALTER TABLE `reviews` ADD CONSTRAINT `fk_review_order` FOREIGN KEY (`order_id`) REFERENCES `orders`(`id`) ON DELETE CASCADE"),
+    ("reviews", "fk_review_product",
+     "ALTER TABLE `reviews` ADD CONSTRAINT `fk_review_product` FOREIGN KEY (`product_id`) REFERENCES `products`(`id`) ON DELETE CASCADE"),
+    ("reviews", "fk_review_reviewer",
+     "ALTER TABLE `reviews` ADD CONSTRAINT `fk_review_reviewer` FOREIGN KEY (`reviewer_id`) REFERENCES `users`(`id`) ON DELETE CASCADE"),
+    ("reviews", "fk_review_reviewee",
+     "ALTER TABLE `reviews` ADD CONSTRAINT `fk_review_reviewee` FOREIGN KEY (`reviewee_id`) REFERENCES `users`(`id`) ON DELETE CASCADE"),
     ("products", "fk_product_user",
      "ALTER TABLE `products` ADD CONSTRAINT `fk_product_user` FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE SET NULL"),
     ("products", "fk_product_category",

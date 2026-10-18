@@ -1,5 +1,7 @@
 /* ================================================================
-   detail.js —— 商品详情页：多图相册 / 收藏想要 / 拍下下单 / 私信卖家
+   detail.js —— 商品详情页：多图相册 / 收藏想要 / 拍下下单 / 私信卖家 / 商品评价
+   评价数据：GET /api/products/<id>/reviews → {total, avg, dist, list}
+             （订单完成后由买家在个人中心提交，一单一评）
    ================================================================ */
 
 let DETAIL = { product: null, images: [], index: 0 };
@@ -82,11 +84,17 @@ function renderDetail(p) {
         +       '</span> 次</span>'
         +       '<span class="tag">想要：<span id="wantTag">' + (p.wants || 0)
         +       '</span> 人</span>'
+        +       (p.review_count
+            ? '<span class="tag">评价：' + priceText(p.rating_avg || 0) + ' 分 · '
+              + p.review_count + ' 条</span>'
+            : '<span class="tag">评价：暂无评价</span>')
         +     '</div>'
         +     '<div class="seller-card">'
-        +       '<span class="avatar" style="background:'
-        +         avatarColor(seller.nickname || '卖家') + '">'
-        +         escapeHtml((seller.nickname || '卖').charAt(0)) + '</span>'
+        +       (seller.avatar
+            ? '<img class="avatar" src="' + imgUrl(seller.avatar) + '" alt="卖家头像">'
+            : '<span class="avatar" style="background:'
+              + avatarColor(seller.nickname || '卖家') + '">'
+              + escapeHtml((seller.nickname || '卖').charAt(0)) + '</span>')
         +       '<div class="seller-info">'
         +         '<div class="seller-nick">' + escapeHtml(seller.nickname || '匿名用户')
         +         '</div>'
@@ -215,6 +223,80 @@ function renderRelated(list) {
     $('relatedList').innerHTML = list.map(productCardHtml).join('');
 }
 
+/* ---------------- 商品评价：平均分 / 星级分布 / 评价列表 ---------------- */
+/* 星级展示：实心 ★ 表已得分数，空心 ☆ 补齐 5 星（与个人中心评价页一致） */
+function starsHtml(n) {
+    const v = Math.max(0, Math.min(5, Math.round(Number(n) || 0)));
+    return '<span class="stars">' + '★★★★★'.slice(0, v) + '☆☆☆☆☆'.slice(0, 5 - v)
+        + '</span>';
+}
+
+function renderReviews(d) {
+    const card = $('reviewCard');
+    if (!card) return;
+    if (!d) { card.style.display = 'none'; return; }
+    const total = Number(d.total) || 0;
+    const list = d.list || [];
+    card.style.display = '';
+
+    if (!total) {
+        $('reviewTotal').textContent = '';
+        $('reviewSummary').style.display = 'none';
+        $('reviewList').innerHTML = '<div class="empty-state">还没有评价：'
+            + '买家收到货并确认交易完成后即可评价</div>';
+        return;
+    }
+
+    const avg = Number(d.avg) || 0;
+    const dist = d.dist || {};
+    let distHtml = '';
+    for (let s = 5; s >= 1; s--) {
+        const n = Number(dist[String(s)] || 0);
+        const pct = Math.round(n * 100 / total);
+        distHtml += '<div class="dist-row">'
+            + '<span class="dist-star">' + s + ' 星</span>'
+            + '<span class="dist-bar"><i style="width:' + pct + '%"></i></span>'
+            + '<span class="dist-num">' + n + '</span>'
+            + '</div>';
+    }
+
+    $('reviewTotal').textContent = '共 ' + total + ' 条';
+    $('reviewSummary').style.display = '';
+    $('reviewSummary').innerHTML = ''
+        + '<div class="review-score"><strong>' + priceText(avg)
+        +   '</strong><span>平均分</span></div>'
+        + '<div class="review-summary-side">'
+        +   starsHtml(avg)
+        +   '<span class="review-summary-sub">共 ' + total + ' 条评价</span>'
+        +   distHtml
+        + '</div>';
+
+    $('reviewList').innerHTML = list.map(function (r) {
+        return '<div class="review-item">'
+            + '<div class="review-item-head">'
+            +   '<span class="review-item-user">'
+            +     escapeHtml(r.reviewer_name || '匿名用户') + '</span>'
+            +   starsHtml(r.rating)
+            +   '<span class="review-item-time">'
+            +     escapeHtml(String(r.created_at || '').slice(0, 16)) + '</span>'
+            + '</div>'
+            + (r.content
+                ? '<div class="review-item-text">' + escapeHtml(r.content) + '</div>'
+                : '<div class="review-item-text is-empty">该买家未填写文字评价</div>')
+            + '</div>';
+    }).join('');
+}
+
+/* 评价失败不阻塞详情页主体，仅隐藏评价卡片 */
+async function loadReviews(pid) {
+    try {
+        const json = await API.get('/products/' + pid + '/reviews');
+        renderReviews(json.data);
+    } catch (e) {
+        renderReviews(null);
+    }
+}
+
 async function init() {
     mountUserChip();
     mountCatBar();
@@ -230,6 +312,7 @@ async function init() {
         const json = await API.get('/products/' + id);
         renderDetail(json.data.product);
         renderRelated(json.data.related);
+        loadReviews(id);
         recordView();
     } catch (e) {
         $('detailBox').innerHTML = '<div class="empty-state">' + escapeHtml(e.message)

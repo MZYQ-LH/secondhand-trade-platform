@@ -210,9 +210,11 @@ async function mountUserChip() {
     } catch (e) { }
 
     el.innerHTML = ''
-        + '<span class="avatar" style="background:' + avatarColor(user.nickname) + '">'
-        +   escapeHtml(user.nickname.charAt(0))
-        + '</span>'
+        + (user.avatar
+            ? '<img class="avatar" src="' + imgUrl(user.avatar) + '" alt="'
+              + escapeHtml(user.nickname) + '">'
+            : '<span class="avatar" style="background:' + avatarColor(user.nickname) + '">'
+              + escapeHtml(user.nickname.charAt(0)) + '</span>')
         + '<span class="user-name">' + escapeHtml(user.nickname) + '</span>'
         + '<span class="caret">▼</span>'
         + '<div class="user-menu">'

@@ -325,6 +325,29 @@
     display: block;
 }
 
+.demo-accounts {
+    margin-top: 18px;
+    padding: 12px 14px;
+    background: var(--xy-bg);
+    border-radius: 12px;
+    font-size: 12.5px;
+    color: var(--xy-text-sub);
+    line-height: 1.9;
+}
+
+.demo-accounts b {
+    color: var(--xy-text);
+}
+
+.demo-accounts code {
+    background: #fff;
+    border: 1px solid var(--xy-border);
+    border-radius: 5px;
+    padding: 1px 6px;
+    color: var(--xy-yellow-dark);
+    cursor: pointer;
+}
+
 /* ---------------- 个人中心 ---------------- */
 .profile-head {
     display: flex;
@@ -1262,3 +1285,329 @@
 .auth-form {
     display: block;
 }
+
+/* ================================================================
+   个人信息修改弹窗 + 订单评价弹窗 + 评价列表（实验3 新增功能样式）
+   ================================================================ */
+
+/* ---------------- 通用弹窗 ---------------- */
+.modal-mask {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, .42);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 9000;
+    padding: 16px;
+}
+
+.modal-mask.show {
+    display: flex;
+}
+
+.modal-box {
+    width: 100%;
+    max-width: 440px;
+    max-height: 88vh;
+    overflow-y: auto;
+    background: #fff;
+    border-radius: 16px;
+    padding: 20px 22px 22px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, .25);
+}
+
+.modal-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+}
+
+.modal-title {
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--xy-text);
+}
+
+.modal-close {
+    border: none;
+    background: transparent;
+    font-size: 22px;
+    line-height: 1;
+    color: #999;
+    cursor: pointer;
+    padding: 0 4px;
+}
+
+.modal-close:hover {
+    color: var(--xy-yellow-dark);
+}
+
+.modal-form {
+    display: block;
+}
+
+.modal-form .form-item input[type="password"] {
+    width: 100%;
+    border: 1px solid #E0E0E0;
+    border-radius: 10px;
+    padding: 11px 14px;
+    font-size: 14px;
+    font-family: inherit;
+    outline: none;
+    transition: border-color .2s;
+}
+
+.modal-form .form-item input[type="password"]:focus {
+    border-color: var(--sakura-3);
+}
+
+/* 禁用态输入框（登录账号不可修改） */
+.modal-form .form-item input:disabled {
+    background: #F7F7F7;
+    color: #999;
+    cursor: not-allowed;
+}
+
+/* ---------------- 头像选择（预览 + 上传 / 清除） ---------------- */
+.avatar-picker {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.avatar-picker-side {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+/* 大号头像：个人中心 / 弹窗预览通用（span 色块与 img 图片两种形态） */
+.avatar-lg {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    font-size: 26px;
+    font-weight: 700;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+img.avatar,
+img.avatar-lg,
+img.profile-avatar {
+    object-fit: cover;
+}
+
+.upload-tip {
+    font-size: 12px;
+    color: #999;
+    flex-basis: 100%;
+}
+
+/* ---------------- 星级评分：输入 + 展示 ---------------- */
+.star-picker {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.star-picker .star {
+    border: none;
+    background: transparent;
+    font-size: 26px;
+    line-height: 1;
+    color: #E3E3E3;
+    cursor: pointer;
+    padding: 0 2px;
+    transition: color .15s, transform .15s;
+}
+
+.star-picker .star.on {
+    color: #FFC107;
+}
+
+.star-picker .star:hover {
+    transform: scale(1.12);
+}
+
+.star-tip {
+    margin-left: 10px;
+    font-size: 13px;
+    color: var(--xy-text-sub);
+}
+
+.stars {
+    color: #FFC107;
+    font-size: 15px;
+    letter-spacing: 1px;
+}
+
+/* ---------------- 评价弹窗中的订单信息 ---------------- */
+.review-target {
+    margin-bottom: 14px;
+}
+
+.review-good-name {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--xy-text);
+}
+
+.review-good-sub {
+    margin-top: 4px;
+    font-size: 12px;
+    color: var(--xy-text-sub);
+}
+
+/* ---------------- 评价汇总（平均分 + 星级分布） ---------------- */
+.review-total {
+    font-size: 13px;
+    font-weight: 400;
+    color: var(--xy-text-sub);
+}
+
+.review-summary {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    padding: 14px 18px;
+    margin-bottom: 14px;
+    background: #FFFDF7;
+    border: 1px solid var(--xy-border);
+    border-radius: 12px;
+}
+
+.review-score {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 84px;
+}
+
+.review-score strong {
+    font-size: 30px;
+    color: var(--xy-yellow-dark);
+    line-height: 1.1;
+}
+
+.review-score span {
+    font-size: 12px;
+    color: var(--xy-text-sub);
+}
+
+.review-summary-side {
+    flex: 1;
+    min-width: 0;
+}
+
+.review-summary-sub {
+    display: block;
+    margin: 4px 0 8px;
+    font-size: 12px;
+    color: var(--xy-text-sub);
+}
+
+.dist-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--xy-text-sub);
+    line-height: 1.9;
+}
+
+.dist-star {
+    width: 34px;
+    flex-shrink: 0;
+}
+
+.dist-bar {
+    flex: 1;
+    height: 6px;
+    background: #F1EBEF;
+    border-radius: 999px;
+    overflow: hidden;
+}
+
+.dist-bar i {
+    display: block;
+    height: 100%;
+    background: #FFC107;
+    border-radius: 999px;
+}
+
+.dist-num {
+    width: 24px;
+    text-align: right;
+    flex-shrink: 0;
+}
+
+/* ---------------- 评价条目（详情页 / 个人中心共用） ---------------- */
+.review-item {
+    padding: 12px 4px;
+    border-bottom: 1px dashed var(--xy-border);
+}
+
+.review-item:last-child {
+    border-bottom: none;
+}
+
+.review-item-head {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.review-item-user {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--xy-text);
+}
+
+.review-item-time {
+    margin-left: auto;
+    font-size: 12px;
+    color: var(--xy-text-sub);
+}
+
+.review-item-meta {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 6px;
+}
+
+.review-item-peer {
+    font-size: 12px;
+    color: var(--xy-text-sub);
+}
+
+.review-item-text {
+    margin-top: 6px;
+    font-size: 14px;
+    line-height: 1.75;
+    color: var(--xy-text);
+    word-break: break-word;
+}
+
+.review-item-text.is-empty {
+    color: #BBB;
+}
+
+a.review-good-name {
+    color: var(--xy-text);
+    text-decoration: none;
+}
+
+a.review-good-name:hover {
+    color: var(--xy-yellow-dark);
+}
+

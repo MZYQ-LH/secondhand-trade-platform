@@ -59,6 +59,13 @@
             <div class="desc-text" id="detailDesc"></div>
         </div>
 
+        <!-- 商品评价：平均分 + 星级分布 + 评价列表（订单完成后买家可评价，接口 /api/products/<id>/reviews） -->
+        <div class="section-card" id="reviewCard" style="display:none;">
+            <div class="section-title">商品评价 <span class="review-total" id="reviewTotal"></span></div>
+            <div class="review-summary" id="reviewSummary" style="display:none;"></div>
+            <div id="reviewList"></div>
+        </div>
+
         <div class="related-section" id="relatedSection" style="display:none;">
             <div class="section-title">相关推荐</div>
             <div class="product-grid" id="relatedList"></div>

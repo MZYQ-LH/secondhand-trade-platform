@@ -1,4 +1,4 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 """热查询索引补齐脚本（幂等，可重复执行）
 
 依据：对 app.py 中的高频查询做 EXPLAIN，只补真正缺索引的查询，
@@ -32,6 +32,9 @@ SKIPPED = {
     'orders': 'idx_buyer_id / idx_seller_id / idx_product_id 已覆盖买家、卖家、商品维度订单查询',
     'product_images': 'idx_product_id 已覆盖按商品取图；按 sort_order 排序仅影响极小结果集',
     'categories': '配置表，数据量个位数，无需索引',
+    'reviews': 'uk_order(order_id) 覆盖"一单一评"去重；idx_product(product_id) 覆盖商品评价列表与平均分统计；'
+               'idx_reviewer / idx_reviewee 覆盖"我发出/我收到的评价"（InnoDB 二级索引隐含主键 id，'
+               'ORDER BY id DESC 可反向扫描，无需再建 (product_id,id) 组合索引）',
 }
 
 
