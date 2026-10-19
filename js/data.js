@@ -8,9 +8,9 @@
    ================================================================ */
 
 /* 后端地址：
-   - 页面由后端 5000 端口托管时用同源地址（换主机/换 IP 不用改代码）
-   - file:// 或其它端口打开时回退到本机 127.0.0.1:5000 */
-const API_ORIGIN = (location.port === '5000') ? location.origin : 'http://127.0.0.1:5000';
+   - 由 Flask 托管（http/https）时一律用同源地址，改端口、换主机、换 IP 都不用改代码
+   - 仅当用 file:// 直接打开页面时，才回退到本机 127.0.0.1:5000 */
+const API_ORIGIN = /^https?:$/.test(location.protocol) ? location.origin : 'http://127.0.0.1:5000';
 const API_BASE = API_ORIGIN + '/api';
 
 /* ---------------- 工具函数 ---------------- */
